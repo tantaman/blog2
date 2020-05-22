@@ -32,16 +32,33 @@ const allData = [
 let data = [{id: 'Tantamanlands'}];
 
 function addChildren(data, rootId) {
-  const ret = data.concat(allData.filter(n => (n.parentIds || []).indexOf(rootId) !== -1));
+  const have = toMap(data, d => d.id);
+  const ret = data.concat(allData.filter(n => have[n.id] == null && (n.parentIds || []).indexOf(rootId) !== -1));
   const n = ret.find(x => x.id === rootId);
   n._open = true;
   return ret;
 }
 
+// Only close nodes that don't have some other parent keeping them open!
+// Highlight as open if no children exist!
 function removeChildren(data, rootId) {
   const ret = data.filter(n => (n.parentIds || []).indexOf(rootId) === -1);
   const n = ret.find(x => x.id === rootId);
   n._open = false;
+  return ret;
+}
+
+function first(arr) {
+  return arr[0];
+}
+
+function last(arr) {
+  return arr[arr.length - 1];
+}
+
+function toMap(arr, fn) {
+  const ret = {};
+  arr.forEach(e => ret[fn(e)] = e);
   return ret;
 }
 
@@ -92,9 +109,7 @@ function makeNav(data) {
   const interp = d3.interpolateRgb('#666666', '#AAAAAA');
 
   function constructDag(data) {
-    console.log(data);
     const dag = reader(data);
-    console.log(dag);
     layout(dag);
     
     const steps = dag.size();
@@ -127,7 +142,8 @@ function makeNav(data) {
       .attr('marker-end', 'url(#arrow)');
 
     existing.attr('d', ({ data }) => {
-      const [start, end] = data.points;
+      const start = first(data.points);
+      const end = last(data.points);
       // Should technically shift the X as well so we retain
       // the original slop of the line.
       return line([start, {x: end.x, y: end.y - 10}]);
@@ -138,21 +154,20 @@ function makeNav(data) {
 
   function plotNodes(dag) {
     const existing = svgSelection
-      .selectAll('.label')
+      .selectAll('.node-label')
       .data(dag.descendants());
 
     existing
       .enter()
       .append('text')
-      .attr('class', 'label')
+      .attr('class', 'node-label')
       .attr('transform', ({x, y}) => `translate(${x}, ${y})`)
       .text(d => d.id)
-      .attr('class', 'node-label')
       .attr('font-weight', 'bold')
       .attr('font-family', 'sans-serif')
       .attr('text-anchor', 'middle')
       .attr('alignment-baseline', 'middle')
-      .attr('fill', textFill)
+      .attr('fill', d =>  d.data._open ? textHighlightFill : textFill)
       .attr('fill-opacity', 1)
       .attr('stroke', '#000000')
       .attr('stroke-width', 0.5)
@@ -163,7 +178,10 @@ function makeNav(data) {
 
     existing.exit().remove();
 
-    existing.attr('transform', ({x, y}) => `translate(${x}, ${y})`);
+    existing
+      .attr('fill', d =>  d.data._open ? textHighlightFill : textFill)
+      .attr('transform', ({x, y}) => `translate(${x}, ${y})`)
+      .text(d => d.id);
   }
 
 
@@ -172,11 +190,11 @@ function makeNav(data) {
   plotNodes(dag);
 
   function onTextMouseOver() {
-    d3.select(this).attr('fill', textHighlightFill);
+    d3.select(this).attr('fill', d =>  d.data._open ? textFill : textHighlightFill);
   }
 
   function onTextMouseOut() {
-    d3.select(this).attr('fill', textFill); 
+    d3.select(this).attr('fill', d => d.data._open ? textHighlightFill : textFill); 
   }
 
   function onTextClick() {
