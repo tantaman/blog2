@@ -30,9 +30,7 @@ const allData = [
 ];
 
 function addChildren(data, rootId) {
-  const t = data.concat(allData.filter(n => (n.parentIds || []).indexOf(rootId) !== -1));
-  console.log(t);
-  return t;
+  return data.concat(allData.filter(n => (n.parentIds || []).indexOf(rootId) !== -1));
 }
 
 function removeChildren(data, rootId) {
@@ -87,6 +85,7 @@ function makeNav(data) {
 
   function constructDag(data) {
     const dag = reader(data);
+    console.log(dag);
     layout(dag);
     
     const steps = dag.size();
@@ -116,15 +115,15 @@ function makeNav(data) {
       .attr('marker-end', 'url(#arrow)');
   }
 
-  function plotNodes() {
-    const nodes = svgSelection.append('g')
-      .selectAll('g')
-      .data(dag.descendants())
-      .enter()
-      .append('g')
-      .attr('transform', ({x, y}) => `translate(${x}, ${y})`);
+  function plotNodes(dag) {
+    const existing = svgSelection
+      .selectAll('text')
+      .data(dag.descendants());
 
-    nodes.append('text')
+    existing
+      .enter()
+      .append('text')
+      .attr('transform', ({x, y}) => `translate(${x}, ${y})`)
       .text(d => d.id)
       .attr('class', 'node-label')
       .attr('font-weight', 'bold')
@@ -139,6 +138,10 @@ function makeNav(data) {
       .on('mouseover', onTextMouseOver)
       .on('mouseout', onTextMouseOut)
       .on('click', onTextClick);
+
+    existing.exit().remove();
+
+    existing.attr('transform', ({x, y}) => `translate(${x}, ${y})`);
   }
 
 
@@ -161,4 +164,5 @@ function makeNav(data) {
   }
 }
 
+// makeNav(allData);
 makeNav([{id: 'Tantamanlands'}]);
