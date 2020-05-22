@@ -40,8 +40,9 @@ function addChildren(data, rootId) {
   return ret;
 }
 
-// Only close nodes that don't have some other parent keeping them open!
-// Highlight as open if no children exist!
+// TODO: Only close nodes that don't have some other parent keeping them open!
+// TODO: Highlight as open if no children exist!
+// TODO: Close children of node when parent is closed.
 function removeChildren(data, rootId) {
   const ret = data.filter(n => (n.parentIds || []).indexOf(rootId) === -1);
   const n = ret.find(x => x.id === rootId);
@@ -131,9 +132,12 @@ function makeNav(data) {
       .enter()
       .append('path')
       .attr('class', 'edge')
+      // TODO: draw the line slowly instead of fading in
+      .transition()
+        .duration(1500)
       .attr('d', ({ data }) => {
         const [start, end] = data.points;
-        // Should technically shift the X as well so we retain
+        // TODO: Should technically shift the X as well so we retain
         // the original slop of the line.
         return line([start, {x: end.x, y: end.y - 10}]);
       })
@@ -142,13 +146,18 @@ function makeNav(data) {
       .attr('stroke', '#666666')
       .attr('marker-end', 'url(#arrow)');
 
-    existing.attr('d', ({ data }) => {
-      const start = first(data.points);
-      const end = last(data.points);
-      // Should technically shift the X as well so we retain
-      // the original slop of the line.
-      return line([start, {x: end.x, y: end.y - 10}]);
-    });
+    existing
+      .transition()
+        .duration(750)
+        .attr('d', ({ data }) => {
+        const start = first(data.points);
+        // TODO: How many points are building up on these paths?
+        // Do we need to nuke the layout to get a clean computation?
+        const end = last(data.points);
+        // TODO: Should technically shift the X as well so we retain
+        // the original slop of the line.
+        return line([start, {x: end.x, y: end.y - 10}]);
+      });
 
     existing.exit().remove();
   }
@@ -181,7 +190,9 @@ function makeNav(data) {
 
     existing
       .attr('fill', d =>  d.data._open ? textHighlightFill : textFill)
-      .attr('transform', ({x, y}) => `translate(${x}, ${y})`)
+      .transition()
+        .duration(750)
+        .attr('transform', ({x, y}) => `translate(${x}, ${y})`)
       .text(d => d.id);
   }
 
