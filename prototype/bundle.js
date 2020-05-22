@@ -30,12 +30,20 @@ const allData = [
   }
 ];
 
+let data = [{id: 'Tantamanlands'}];
+
 function addChildren(data, rootId) {
-  return data.concat(allData.filter(n => (n.parentIds || []).indexOf(rootId) !== -1));
+  const ret = data.concat(allData.filter(n => (n.parentIds || []).indexOf(rootId) !== -1));
+  const n = ret.find(x => x.id === rootId);
+  n._open = true;
+  return ret;
 }
 
 function removeChildren(data, rootId) {
-  return data.filter(n => n.parentIds.indexOf(rootId) === -1);
+  const ret = data.filter(n => (n.parentIds || []).indexOf(rootId) === -1);
+  const n = ret.find(x => x.id === rootId);
+  n._open = false;
+  return ret;
 }
 
 function htmlToElement(html) {
@@ -85,6 +93,7 @@ function makeNav(data) {
   const interp = d3.interpolateRgb('#666666', '#AAAAAA');
 
   function constructDag(data) {
+    console.log(data);
     const dag = reader(data);
     console.log(dag);
     layout(dag);
@@ -99,11 +108,14 @@ function makeNav(data) {
   }
 
   function plotEdges(dag) {
-    svgSelection.append('g')
-      .selectAll('path')
-      .data(dag.links())
+    const existing = svgSelection
+      .selectAll('.edge')
+      .data(dag.links());
+
+    existing
       .enter()
       .append('path')
+      .attr('class', 'edge')
       .attr('d', ({ data }) => {
         const [start, end] = data.points;
         // Should technically shift the X as well so we retain
@@ -114,16 +126,26 @@ function makeNav(data) {
       .attr('stroke-width', 2)
       .attr('stroke', '#666666')
       .attr('marker-end', 'url(#arrow)');
+
+    existing.attr('d', ({ data }) => {
+      const [start, end] = data.points;
+      // Should technically shift the X as well so we retain
+      // the original slop of the line.
+      return line([start, {x: end.x, y: end.y - 10}]);
+    });
+
+    existing.exit().remove();
   }
 
   function plotNodes(dag) {
     const existing = svgSelection
-      .selectAll('text')
+      .selectAll('.label')
       .data(dag.descendants());
 
     existing
       .enter()
       .append('text')
+      .attr('class', 'label')
       .attr('transform', ({x, y}) => `translate(${x}, ${y})`)
       .text(d => d.id)
       .attr('class', 'node-label')
@@ -159,14 +181,20 @@ function makeNav(data) {
   }
 
   function onTextClick() {
-    const dag = constructDag(addChildren(data, d3.select(this).data()[0].id));
+    const self = d3.select(this).data()[0];
+    if (self.data._open) {
+      data = removeChildren(data, self.id);
+    } else {
+      data = addChildren(data, self.id);
+    }
+    const dag = constructDag(data);
     plotEdges(dag);
     plotNodes(dag);
   }
 }
 
 // makeNav(allData);
-makeNav([{id: 'Tantamanlands'}]);
+makeNav(data);
 },{"d3":34,"d3-dag":9}],2:[function(require,module,exports){
 // https://d3js.org/d3-array/ v1.2.4 Copyright 2018 Mike Bostock
 (function (global, factory) {
