@@ -2,6 +2,15 @@ const d3Dag = require('d3-dag');
 const d3Base = require('d3');
 const d3 = {...d3Dag, ...d3Base};
 
+/**
+* TODO:
+* re-do this with your own custom layout.
+* 1. It should take a graph of node and edge lists
+* 2. If we find a cycle we should break it (for the layout algo)
+* 3. We should topologically sort the graph provided
+* 4. Compute the layout based upon this topological sorting w/ broken cycles.
+*/
+
 const allData = [
   {
     id: 'Tantamanlands',
