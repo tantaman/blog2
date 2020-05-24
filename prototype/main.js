@@ -49,7 +49,6 @@ function removeChildren(data, rootId, seen) {
   if (seen.has(rootId)) {
     return data;
   }
-  console.log(rootId);
   seen.add(rootId);
 
   let ret = data.filter(n => (n.parentIds || []).indexOf(rootId) === -1);
